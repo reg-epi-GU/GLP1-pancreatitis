@@ -1,41 +1,6 @@
 cd "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\output\fig for pub"
 
-/*
-graph use "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\output\20260422\Fig pancreatitis_all_gvs_ITT_ph.gph"
-graph save "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\output\fig for pub\fig2A.gph", replace
-graph close
 
-graph use "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\output\20260422\PP_naive\Fig pancreatitis_all_gvs_PP_naive_ph.gph"
-graph save "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\output\fig for pub\fig2B.gph", replace
-graph close
-
-
-
-graph use "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\output\20260422\Fig pancreatitis_all_gvd_ITT_ph.gph"
-graph save "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\output\fig for pub\fig3A.gph", replace
-graph close
-
-graph use "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\output\20260422\PP_naive\Fig pancreatitis_all_gvd_PP_naive_ph.gph"
-graph save "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\output\fig for pub\fig3B.gph", replace
-graph close
-
-
-**** Do editings for those graph, basically add panel letter.
-
-graph combine "fig2A" "fig2B", xcommon ycommon
-graph save "fig2", replace
-graph export "fig2.svg", replace
-
-
-graph combine "fig3A" "fig3B", xcommon ycommon
-graph save "fig3", replace
-graph export "fig3.svg", replace
-
-
-
-*/
-
-**** In order to change rarea to rline, graphs must be remade.
 use "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\data\ana_data_perprotocol.dta", clear
 range time 0 3 49
 quietly: mylabels 0(0.1)1, local(labels) myscale(@/100) suffix("%") format(%4.1f)
