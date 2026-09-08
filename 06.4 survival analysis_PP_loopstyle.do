@@ -14,8 +14,8 @@ drop drug_switch_date_g drug_switch_date_d drug_switch_date_s
 save ana_data_iptw_pp, replace
 */
 
-foreach o in panc_all_wk852 /*panc_all_wok852*/{   //UPDATE NEED
-	forvalues i =1/1{		//UPDATE NEED
+foreach o in panc_all_wk852 panc_all_wok852{   //UPDATE NEED
+	forvalues i =1/2{		//UPDATE NEED
 		local v=cond(`i'==1, "gvd", "gvs")
 		local c=cond(`i'==1, "DPP-4", "SGLT-2")
 		
