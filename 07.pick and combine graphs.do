@@ -1,11 +1,11 @@
 cd "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\output\fig for pub"
 
 
-use "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\data\ana_data_perprotocol.dta", clear
-range time 0 3 49
-quietly: mylabels 0(0.1)1, local(labels) myscale(@/100) suffix("%") format(%4.1f)
-***** Descriptives
-foreach o in pancreatitis_all{
+use "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\data\ana_data_iptw_pp.dta", clear
+range time 0 5 101
+quietly: mylabels 0(0.2)1.6, local(labels) myscale(@/100) suffix("%") format(%4.1f)
+
+foreach o in panc_all_wk852{
 	
 	egen dateout_`o'=rowmin(`o'_date emig_date deathdate fuend)
 	format datein dateout_`o' fuend %d
@@ -17,21 +17,19 @@ foreach o in pancreatitis_all{
 	forvalues i=1/2{	
 		
 	******* ITT graph
-		stset dateout_`o', fail(`o'_out1) enter(datein) origin(datein) scale(365.25)
+		stset dateout_`o' [pweight=iptw_smr], fail(`o'_out1) enter(datein) origin(datein) scale(365.25)
 	
 		local v=cond(`i'==1, "gvs", "gvd")
 		local c=cond(`i'==1, "SGLT2", "DPP4")
 		local nam=cond(`i'==1, "SGLT-2", "DPP-4")
 		
 
-		cap stpm3 i.expo_`v' agesp* i.gender i.indexyr ib2.region_g i.bc i.education3 i.fam_panc i.t2donsetyr_g ib2.bmi_g i.smokinghabit_g i.hba1c_g i.preindex_lipidlowerdrug i.preindex_alcoholdisorder i.preindex_gallstones i.preindex_abdomsurgery if expo_`v'!=., knots(5 35 65 95, percentile) scale(lncumhazard) eform 	
+		cap stpm3 i.expo_`v' if expo_`v'!=.,  knots(5 35 65 95, percentile) tvc(expo_`v') knotstvc(10 50 90, percentile) scale(lncumhazard) eform 
 		if _rc != 0 {
-			stpm3 i.expo_`v' agesp* i.gender i.indexyr ib2.region_g i.bc i.education3 i.fam_panc i.t2donsetyr_g ib2.bmi_g i.smokinghabit_g i.hba1c_g i.preindex_lipidlowerdrug i.preindex_alcoholdisorder i.preindex_gallstones if expo_`v'!=., knots(5 35 65 95, percentile) scale(lncumhazard) eform 	
-		}
-		if _rc != 0{
-			di as error "Both Model failed, check how to continue"
-			break
-		}
+				di as error "Model failed. Skipping the analysis for outcome `o' and comparison between GLP-1 vs `c'"
+				continue
+		} 
+		
 		cap frame drop msurv
 		standsurv if expo_`v'!=., failure at1(expo_`v' 0) at2(expo_`v' 1) timevar(time) ///
 		atvar(`c'_std glp_`c'_std) contrast(difference) contrastvars(riskdiff_glp_`c') ci frame(msurv, replace)
@@ -52,20 +50,20 @@ foreach o in pancreatitis_all{
 		title("{bf:Intention-to-treat}") ///
 		ylabel(`labels', labsize(small)) ///
 		xtitle("{bf:Years since treatment initiation}", size(*1) margin(0 0 0 0)) ///
-		xlabel(0(0.5)3, nogrid format(%9.1f) labsize(small)) ///
-		xscale(range(0 3)) ///
+		xlabel(0(1)5, nogrid format(%9.1f) labsize(small)) ///
+		xscale(range(0 5)) ///
 		ytitle("{bf:Standardised cumulative incidence}" "{bf:% (95% CI)}", size(*1) margin(0 0 0 0)) ///
 		name("fig`=`i'+1'A_curv", replace) ///
-		legend(order(1 "GLP-1" 2 "`nam'") col(1) size(*1.5) title("") ring(0) pos(11) yoffset(-11) xoffset(2) region(fcolor(none)))
+		legend(order(1 "GLP-1" 2 "`nam'") col(1) size(*1.5) title("") ring(0) pos(11) yoffset(-5) xoffset(2) region(fcolor(none)))
 
 		graph save "fig`=`i'+1'A_curv", replace
 		
-		frame msurv: tw (rcap riskdiff_glp_`c'_lci_100 riskdiff_glp_`c'_uci_100 time if inlist(time, 0, 0.5, 1, 1.5, 2, 2.5, 3), color(blue%30)) ///
-		(scatter riskdiff_glp_`c'_100 time if inlist(time, 0, 0.5, 1, 1.5, 2, 2.5, 3)), scheme(tab2) ///
-		ylabel(-0.2(0.05)0.2, nogrid format(%04.2f) labsize(small)) ///
+		frame msurv: tw (rcap riskdiff_glp_`c'_lci_100 riskdiff_glp_`c'_uci_100 time if inlist(time, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5), color(blue%30)) ///
+		(scatter riskdiff_glp_`c'_100 time if inlist(time, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)), scheme(tab2) ///
+		ylabel(-0.4(0.1)0.4, nogrid format(%04.2f) labsize(small)) ///
 		xtitle("{bf:Years since treatment initiation}", size(*1) margin(0 0 0 0)) ///
-		xlabel(0(0.5)3, nogrid format(%9.1f) labsize(small)) ///
-		xscale(range(0 3)) ///
+		xlabel(0(1)5, nogrid format(%9.1f) labsize(small)) ///
+		xscale(range(0 5)) ///
 		ytitle("{bf:Risk difference}" "{bf:percentage point (95% CI)}", size(*1) margin(0 0 0 0)) ///
 		yscale(range(-0.2 0.2)) ///
 		yline(0, lp(-)) ///
@@ -76,16 +74,14 @@ foreach o in pancreatitis_all{
 		
 		
 	******* PP graph
-		stset dateout_`o'_pp, fail(`o'_out1_pp) enter(datein) origin(datein) scale(365.25)
+		stset dateout_`o' [pweight=iptw_smr], fail(`o'_out1) enter(datein) origin(datein) scale(365.25)
 	
-		cap stpm3 i.expo_`v' agesp* i.gender i.indexyr ib2.region_g i.bc i.education3 i.fam_panc i.t2donsetyr_g ib2.bmi_g i.smokinghabit_g i.hba1c_g i.preindex_lipidlowerdrug i.preindex_alcoholdisorder i.preindex_gallstones i.preindex_abdomsurgery if expo_`v'!=., knots(5 35 65 95, percentile) scale(lncumhazard) eform 	
-		if _rc != 0 {
-			stpm3 i.expo_`v' agesp* i.gender i.indexyr ib2.region_g i.bc i.education3 i.fam_panc i.t2donsetyr_g ib2.bmi_g i.smokinghabit_g i.hba1c_g i.preindex_lipidlowerdrug i.preindex_alcoholdisorder i.preindex_gallstones if expo_`v'!=., knots(5 35 65 95, percentile) scale(lncumhazard) eform 	
+		cap collect:stpm3 i.expo_`v' if expo_`v'!=., knots(5 35 65 95, percentile) tvc(expo_`v') knotstvc(10 50 90, percentile) scale(lncumhazard) eform 	
+		if _rc!=0 {
+			di as error "Model failed. Skipping the analysis for outcome `o' and comparison between GLP-1 vs `c'"
+			continue
 		}
-		if _rc != 0{
-			di as error "Both Model failed, check how to continue"
-			break
-		}
+		
 		cap frame drop msurv
 		standsurv if expo_`v'!=., failure at1(expo_`v' 0) at2(expo_`v' 1) timevar(time) ///
 		atvar(`c'_std glp_`c'_std) contrast(difference) contrastvars(riskdiff_glp_`c') ci frame(msurv, replace)
@@ -106,19 +102,19 @@ foreach o in pancreatitis_all{
 		title("{bf:Per-protocol}") ///
 		ylabel(`labels', labsize(small)) ///
 		xtitle("{bf:Years since treatment initiation}", size(*1) margin(0 0 0 0)) ///
-		xlabel(0(0.5)3, nogrid format(%9.1f) labsize(small)) ///
-		xscale(range(0 3)) ///
+		xlabel(0(1)5, nogrid format(%9.1f) labsize(small)) ///
+		xscale(range(0 5)) ///
 		name("fig`=`i'+1'B_curv", replace) ///
-		legend(order(1 "GLP-1" 2 "`nam'") col(1) size(*1.5) title("") ring(0) pos(11) yoffset(-11) xoffset(2) region(fcolor(none)))
+		legend(order(1 "GLP-1" 2 "`nam'") col(1) size(*1.5) title("") ring(0) pos(11) yoffset(-5) xoffset(2) region(fcolor(none)))
 
 		graph save "fig`=`i'+1'B_curv", replace	
 		
-		frame msurv: tw (rcap riskdiff_glp_`c'_lci_100 riskdiff_glp_`c'_uci_100 time if inlist(time, 0, 0.5, 1, 1.5, 2, 2.5, 3), color(blue%30)) ///
-		(scatter riskdiff_glp_`c'_100 time if inlist(time, 0, 0.5, 1, 1.5, 2, 2.5, 3)), scheme(tab2) ///
-		ylabel(-0.2(0.05)0.2, nogrid format(%04.2f) labsize(small)) ///
+		frame msurv: tw (rcap riskdiff_glp_`c'_lci_100 riskdiff_glp_`c'_uci_100 time if inlist(time, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5), color(blue%30)) ///
+		(scatter riskdiff_glp_`c'_100 time if inlist(time, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)), scheme(tab2) ///
+		ylabel(-0.4(0.1)0.4, nogrid format(%04.2f) labsize(small)) ///
 		xtitle("{bf:Years since treatment initiation}", size(*1) margin(0 0 0 0)) ///
-		xlabel(0(0.5)3, nogrid format(%9.1f) labsize(small)) ///
-		xscale(range(0 3)) ///
+		xlabel(0(1)5, nogrid format(%9.1f) labsize(small)) ///
+		xscale(range(0 5)) ///
 		yscale(range(-0.2 0.2)) ///
 		yline(0, lp(-)) ///
 		legend(off) ///
@@ -135,9 +131,9 @@ forvalues i=1/2{
 		graph save "fig`=`i'+1'", replace
 		graph export "fig`=`i'+1'.svg", replace
 }
-
-graph use "fig2A_rd"
-
-graph combine "fig2A_curv" "fig2A_rd", col(1) xcommon
-
-graph combine "fig2A_curv" "fig2A_rd", col(1)
+//
+// graph use "fig2A_rd"
+//
+// graph combine "fig2A_curv" "fig2A_rd", col(1) xcommon
+//
+// graph combine "fig2A_curv" "fig2A_rd", col(1)

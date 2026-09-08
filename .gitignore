@@ -22,3 +22,7 @@ outputs/
 
 #old code
 other/
+.Rproj.user
+SMD/
+03.1 .survival analysis_ITT_crude.do
+09.sens_ana including triglyceride.do
