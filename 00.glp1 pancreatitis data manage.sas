@@ -738,6 +738,6 @@ merge proj.study_data pop_pan;
 by lopnr;
 run;
 
-proc freq data=pop_pan;
-table pantype;
+proc freq data=proj.study_data;
+table pantype*expo/missing;
 run;

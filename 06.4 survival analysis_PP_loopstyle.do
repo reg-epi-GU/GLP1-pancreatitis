@@ -1,5 +1,5 @@
 cd "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\data\"
-global resultpath "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\output\20260825\PP_IPCW"
+global resultpath "S:\HI-SPEED projects\HS26_02 GLP1 pancreatitis\output\20261015\PP_IPCW"
 cap mkdir "${resultpath}"
 
 /* RUN once
@@ -32,13 +32,24 @@ foreach o in panc_all_wk852 panc_all_wok852{   //UPDATE NEED
 		forvalues k=1/300{   //UPDATE NEED
 			di "Outcome `o', bootstrapping iteration `k'/300"
 			use ana_data_iptw_pp, clear 
+			drop iptw_smr
 			keep if expo_`v' != .		
 
 			if `k' > 1 {
 				set seed `=`k'*10'
 				bsample
 			}
+						
 			
+			quietly logit expo_`v' agesp* i.gender i.indexyr i.bc i.region_g i.education3 i.fam_panc i.t2donsetyr_g ///
+			i.bmi_6y_g i.bp_sys_6y_g i.bp_dias_6y_g i.gfr_6y_g i.hba1c_6y_g i.triglyceride_6y_g i.ldl_6y_g ///
+			i.smokinghabit_6y_g i.pre_a10a i.pre_a10ba02 i.pre_a10bb i.pre_a10bg i.pre_c02 i.pre_c03 i.pre_c07 i.pre_c08 i.pre_c09 i.pre_c10 i.pre_alco_dis i.pre_cereb_dis i.pre_cholelithiasis i.pre_diab_nephro i.pre_diab_retino i.pre_heart_fail i.pre_isc_heart_dis i.pre_jxx00 if expo_`v'!=.
+			predict p_expo_`v'
+			gen iptw_smr=1 if expo_`v'==1
+			replace iptw_smr=p_expo_`v'/(1-p_expo_`v') if expo_`v'==0
+			replace iptw_smr=10 if iptw_smr>10
+
+
 			egen info_censor_date=rowmin(discon_date drug_switch_date)
 			replace info_censor_date = info_censor_date-1 if info_censor_date==`o'_date
 			gen info_censor_date_psuedo = datein + 30*(ceil((info_censor_date - datein)/30))
@@ -77,7 +88,6 @@ foreach o in panc_all_wk852 panc_all_wok852{   //UPDATE NEED
 			
 			***** Final Analysis
 			***** TVC option
-			cap drop time
 			cap stpm3 i.expo_`v' if expo_`v'!=., knots(5 35 65 95, percentile) tvc(expo_`v') knotstvc(10 50 90, percentile) scale(lncumhazard) eform 
 			
 			if _rc!=0 {
@@ -99,8 +109,7 @@ foreach o in panc_all_wk852 panc_all_wok852{   //UPDATE NEED
 			}
 
 					
-			use ana_data_iptw_pp, clear 
-			keep if expo_`v' != .	
+			cap drop time
 			range time 0 5 101 	
 
 			***Standardised incidence
