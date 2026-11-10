@@ -539,6 +539,41 @@ forvalues i=1/2{
 	replace iptw_smr1=p_expo_`v'/(1-p_expo_`v') if expo_`v'==0
 	replace iptw_smr1=cond((iptw_smr1>10 & iptw_smr1!=.), 10, iptw_smr1) if expo_`v'==0
 }
+keep lopnr exposure 
+save ana_data_dmdur,replace
+
+dtable dm_dur, by(exposure,nototal) nosample
+dtable dm_dur [pw=iptw_smr1], by(exposure,nototal) nosample 
+
+* Calculate unweighted and IPTW-weighted SMD for GLP-1 vs each comparator
+foreach v in gvd gvs {
+    quietly summarize dm_dur if expo_`v' == 1
+    local m1 = r(mean)
+    local sd1 = r(sd)
+
+    quietly summarize dm_dur if expo_`v' == 0
+    local m0 = r(mean)
+    local sd0 = r(sd)
+
+    * Unweighted pooled SD
+    local sd_ref = sqrt((`sd1'^2 + `sd0'^2)/2)
+    * SMD before weighting
+    local smd_before = abs(`m1' - `m0')/`sd_ref'
+
+    * Weighted group means
+    quietly summarize dm_dur [aw=iptw_smr] if expo_`v' == 1
+    local wm1 = r(mean)
+
+    quietly summarize dm_dur [aw=iptw_smr] if expo_`v' == 0
+    local wm0 = r(mean)
+
+    * SMD after weighting
+    local smd_after = abs(`wm1' - `wm0')/`sd_ref'
+
+    display as text "Comparison: `v'"
+    display "Before IPTW: " %6.3f `smd_before'
+    display "After IPTW:  " %6.3f `smd_after'
+}
 
 range time 0 5 101 
 foreach o in panc_all_wk852{
